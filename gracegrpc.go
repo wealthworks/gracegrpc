@@ -21,15 +21,15 @@ var (
 	ppid       = os.Getppid()
 )
 
-type graceRpc struct {
+type graceGrpc struct {
 	server   *grpc.Server
 	net      *gracenet.Net
 	listener net.Listener
 	errors   chan error
 }
 
-func NewGraceRpc(s *grpc.Server, net, addr string) *graceRpc {
-	gr := &graceRpc{
+func NewGraceGrpc(s *grpc.Server, net, addr string) *graceGrpc {
+	gr := &graceGrpc{
 		server: s,
 		net:    &gracenet.Net{},
 
@@ -44,18 +44,18 @@ func NewGraceRpc(s *grpc.Server, net, addr string) *graceRpc {
 	return gr
 }
 
-func (gr *graceRpc) serve() {
+func (gr *graceGrpc) serve() {
 	go gr.server.Serve(gr.listener)
 }
 
-func (gr *graceRpc) wait() {
+func (gr *graceGrpc) wait() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go gr.signalHandler(&wg)
 	wg.Wait()
 }
 
-func (gr *graceRpc) signalHandler(wg *sync.WaitGroup) {
+func (gr *graceGrpc) signalHandler(wg *sync.WaitGroup) {
 	ch := make(chan os.Signal, 10)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2)
 	for {
@@ -74,7 +74,7 @@ func (gr *graceRpc) signalHandler(wg *sync.WaitGroup) {
 	}
 }
 
-func (gr *graceRpc) Serve() error {
+func (gr *graceGrpc) Serve() error {
 
 	if *verbose {
 		if didInherit {
