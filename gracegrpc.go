@@ -34,7 +34,7 @@ func NewGraceGrpc(s *grpc.Server, net, addr string) *graceGrpc {
 		net:    &gracenet.Net{},
 
 		//for  StartProcess error.
-		errors: make(chan error, 0),
+		errors: make(chan error),
 	}
 	l, err := gr.net.Listen(net, addr)
 	if err != nil {
