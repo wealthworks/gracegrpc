@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 
@@ -17,6 +18,7 @@ import (
 
 var (
 	verbose    = flag.Bool("gracelog", true, "Enable logging.")
+	writepid   = flag.Bool("gracepid", true, "Enable pidfile.")
 	didInherit = os.Getenv("LISTEN_FDS") != ""
 	ppid       = os.Getppid()
 )
@@ -26,6 +28,11 @@ type graceGrpc struct {
 	net      *gracenet.Net
 	listener net.Listener
 	errors   chan error
+	pidfile  string
+}
+
+func (gr *graceGrpc) InitPidFile(pid_file string) {
+	gr.pidfile = pid_file
 }
 
 func NewGraceGrpc(s *grpc.Server, net, addr string) *graceGrpc {
@@ -60,6 +67,7 @@ func (gr *graceGrpc) signalHandler(wg *sync.WaitGroup) {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2)
 	for {
 		sig := <-ch
+		log.Println(sig, "signal has received")
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM:
 			signal.Stop(ch)
@@ -72,6 +80,24 @@ func (gr *graceGrpc) signalHandler(wg *sync.WaitGroup) {
 			}
 		}
 	}
+}
+
+func (gr *graceGrpc) dowritepid(pid int) (err error) {
+	if *writepid == false {
+		return nil
+	}
+
+	pf, err := os.Create(gr.pidfile)
+	defer pf.Close()
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = pf.WriteString(strconv.Itoa(pid))
+	if err != nil {
+		log.Println(err)
+	}
+	return err
 }
 
 func (gr *graceGrpc) Serve() error {
@@ -88,6 +114,11 @@ func (gr *graceGrpc) Serve() error {
 			const msg = "Serving %s with pid %d\n"
 			log.Printf(msg, pprintAddr(gr.listener), os.Getpid())
 		}
+	}
+
+	err := gr.dowritepid(os.Getpid())
+	if err != nil {
+		log.Println(err)
 	}
 
 	gr.serve()
