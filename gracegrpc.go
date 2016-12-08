@@ -42,7 +42,7 @@ func NewGraceGrpc(s *grpc.Server, net, addr string) *graceGrpc {
 
 		//for  StartProcess error.
 		errors:  make(chan error),
-		pidfile: *gracePid,
+		pidfile: gracePid,
 	}
 	l, err := gr.net.Listen(net, addr)
 	if err != nil {
