@@ -18,7 +18,7 @@ import (
 
 var (
 	verbose    = flag.Bool("gracelog", true, "Enable logging.")
-	writepid   = flag.Bool("gracepid", true, "Enable pidfile.")
+	gracePid   = os.Getenv("GRACE_PID_FILE")
 	didInherit = os.Getenv("LISTEN_FDS") != ""
 	ppid       = os.Getppid()
 )
@@ -41,7 +41,8 @@ func NewGraceGrpc(s *grpc.Server, net, addr string) *graceGrpc {
 		net:    &gracenet.Net{},
 
 		//for  StartProcess error.
-		errors: make(chan error),
+		errors:  make(chan error),
+		pidfile: *gracePid,
 	}
 	l, err := gr.net.Listen(net, addr)
 	if err != nil {
@@ -82,8 +83,8 @@ func (gr *graceGrpc) signalHandler(wg *sync.WaitGroup) {
 	}
 }
 
-func (gr *graceGrpc) dowritepid(pid int) (err error) {
-	if *writepid == false {
+func (gr *graceGrpc) doWritePid(pid int) (err error) {
+	if gr.pidfile == "" {
 		return nil
 	}
 
@@ -116,7 +117,7 @@ func (gr *graceGrpc) Serve() error {
 		}
 	}
 
-	err := gr.dowritepid(os.Getpid())
+	err := gr.doWritePid(os.Getpid())
 	if err != nil {
 		log.Println(err)
 	}
