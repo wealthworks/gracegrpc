@@ -68,12 +68,12 @@ func (gr *graceGrpc) signalHandler(wg *sync.WaitGroup) {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2)
 	for {
 		sig := <-ch
-		log.Println(sig, "signal has received")
+		log.Printf("signal: %s has received", sig)
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM:
+			defer wg.Done()
 			signal.Stop(ch)
 			gr.server.GracefulStop()
-			defer wg.Done()
 			return
 		case syscall.SIGUSR2:
 			if _, err := gr.net.StartProcess(); err != nil {
