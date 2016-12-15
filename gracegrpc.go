@@ -73,7 +73,7 @@ func (gr *graceGrpc) signalHandler(wg *sync.WaitGroup) {
 		case syscall.SIGINT, syscall.SIGTERM:
 			signal.Stop(ch)
 			gr.server.GracefulStop()
-			wg.Done()
+			defer wg.Done()
 			return
 		case syscall.SIGUSR2:
 			if _, err := gr.net.StartProcess(); err != nil {
